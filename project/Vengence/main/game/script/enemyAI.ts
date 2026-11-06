@@ -1,8 +1,8 @@
 
 //AI Code for Enemy Pathfinding
 
-function buildWalkableGrid(map, wallsLayer) {
-  const grid = [];
+function buildWalkableGrid(map: Phaser.Tilemaps.Tilemap, wallsLayer: Phaser.Tilemaps.TilemapLayer) {
+  const grid: boolean[][] = [];
   for (let y = 0; y < map.height; y++) {
     grid[y] = [];
     for (let x = 0; x < map.width; x++) {
@@ -12,18 +12,18 @@ function buildWalkableGrid(map, wallsLayer) {
   return grid;
 }
 
-function isTileWalkable(grid, x, y) {
+function isTileWalkable(grid: boolean[][], x: number, y: number) {
   return x >= 0 && y >= 0 && y < grid.length && x < grid[0].length && !grid[y][x];
 }
 
-function getNearestWalkableTile(grid, startX, startY) {
+function getNearestWalkableTile(grid: boolean[][], startX: number, startY: number) {
   const width = grid[0].length;
   const height = grid.length;
   const visited = new Set();
   const queue = [{ x: Phaser.Math.Clamp(startX, 0, width - 1), y: Phaser.Math.Clamp(startY, 0, height - 1) }];
 
   while (queue.length) {
-    const cell = queue.shift();
+    const cell = queue.shift()!;
     const key = `${cell.x},${cell.y}`;
     if (visited.has(key)) continue;
     visited.add(key);
@@ -48,26 +48,26 @@ function getNearestWalkableTile(grid, startX, startY) {
   return { x: Phaser.Math.Clamp(startX, 0, width - 1), y: Phaser.Math.Clamp(startY, 0, height - 1) };
 }
 
-function tileToWorld(tileX, tileY, tileWidth, tileHeight) {
+function tileToWorld(tileX: number, tileY: number, tileWidth: number, tileHeight: number) {
   return {
     x: tileX * tileWidth + tileWidth / 2,
     y: tileY * tileHeight + tileHeight / 2
   };
 }
 
-function worldToTile(worldX, worldY, tileWidth, tileHeight) {
+function worldToTile(worldX: number, worldY: number, tileWidth: number, tileHeight: number) {
   return {
     x: Math.floor(worldX / tileWidth),
     y: Math.floor(worldY / tileHeight)
   };
 }
 
-function findPath(grid, start, goal) {
+function findPath(grid: boolean[][], start: Point, goal: Point) {
   if (!isTileWalkable(grid, goal.x, goal.y)) {
     return null;
   }
 
-  const open = [];
+  const open: PathNode[] = [];
   const closed = new Set();
   const startKey = `${start.x},${start.y}`;
   const goalKey = `${goal.x},${goal.y}`;
@@ -77,11 +77,11 @@ function findPath(grid, start, goal) {
 
   while (open.length) {
     open.sort((a, b) => a.f - b.f);
-    const current = open.shift();
+    const current = open.shift()!;
     const currentKey = `${current.x},${current.y}`;
     if (currentKey === goalKey) {
-      const path = [];
-      let node = current;
+      const path: Point[] = [];
+      let node: PathNode | null = current;
       while (node) {
         path.unshift({ x: node.x, y: node.y });
         node = node.parent;
@@ -123,7 +123,7 @@ function findPath(grid, start, goal) {
   return null;
 }
 
-function findRandomTargetTile(grid, start, minTiles, maxTiles) {
+function findRandomTargetTile(grid: boolean[][], start: Point, minTiles: number, maxTiles: number) {
   const tries = 25;
   for (let i = 0; i < tries; i++) {
     const distance = Phaser.Math.Between(minTiles, maxTiles);
@@ -148,7 +148,7 @@ function findRandomTargetTile(grid, start, minTiles, maxTiles) {
   return start;
 }
 
-function onPlayerDeath(scene) {
+function onPlayerDeath(scene: GameScene) {
   console.log("Player death triggered by enemy proximity.");
   if (!scene) {
     return;
@@ -168,13 +168,13 @@ function onPlayerDeath(scene) {
   if (scene.questMarkers) {
     scene.questMarkers.clear(true, true);
   } else {
-    scene.questMarkers = scene.add.group();
+    scene.questMarkers = scene.add.group() as QuestMarkerGroup;
   }
 
   if (scene.quests) {
     scene.quests.forEach(quest => {
       if (!quest.completed) {
-        const marker = scene.add.circle(quest.x, quest.y, 15, 0xffff00);
+        const marker = scene.add.circle(quest.x, quest.y, 15, 0xffff00) as Phaser.GameObjects.Arc & QuestMarkerData;
         marker.setStrokeStyle(2, 0xff0000);
         marker.questId = quest.id;
         marker.questName = quest.name;
@@ -194,7 +194,7 @@ function onPlayerDeath(scene) {
     }
   }
 
-  const attackSound = document.getElementById("attackSound");
+  const attackSound = document.getElementById("attackSound") as HTMLAudioElement | null;
   if (attackSound) {
     attackSound.currentTime = 0;
     attackSound.play().catch(() => {});
@@ -236,7 +236,7 @@ function onPlayerDeath(scene) {
   }
 }
 
-function updateEnemies(scene) {
+function updateEnemies(scene: GameScene) {
   if (!scene.enemies?.length) {
     return;
   }

@@ -1,11 +1,11 @@
-const config = {
+const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
   width: window.innerWidth,
   height: window.innerHeight,
   pixelArt: true,
   parent: 'game',
   physics: { default: "arcade" },
-  scene: { preload, create, update },
+  scene: { preload, create, update } as unknown as Phaser.Types.Scenes.CreateSceneFromObjectConfig,
   scale: {
     mode: Phaser.Scale.RESIZE,
     autoCenter: Phaser.Scale.CENTER_BOTH
@@ -13,7 +13,7 @@ const config = {
 };
 
 document.addEventListener("click", () => {
-  document.getElementById("backgroundMusic").play()
+  (document.getElementById("backgroundMusic") as HTMLAudioElement).play()
 });
 
 const game = new Phaser.Game(config);
@@ -34,17 +34,17 @@ window.restartGame = function() {
   }
 };
 
-let lastDir = "S";
-let lastDiagDir = null;
-let diagReleasedAt = null;
+let lastDir: string | null = "S";
+let lastDiagDir: string | null = null;
+let diagReleasedAt: number | null = null;
 const DIAGONAL_RELEASE_DELAY = 120;
 
-let lastHorizontal = null;
-let lastVertical = null;
+let lastHorizontal: "left" | "right" | null = null;
+let lastVertical: "up" | "down" | null = null;
 
 let walkVolume = 0;
 
-function preload() {
+function preload(this: GameScene) {
   this.load.spritesheet("idle-S", "assets/sprites/player/Enemy-Melee-Idle-S.png", { frameWidth: 256, frameHeight: 256 });
   this.load.spritesheet("idle-N", "assets/sprites/player/Enemy-Melee-Idle-N.png", { frameWidth: 256, frameHeight: 256 });
   this.load.spritesheet("idle-E", "assets/sprites/player/Enemy-Melee-Idle-E.png", { frameWidth: 256, frameHeight: 256 });
@@ -68,7 +68,7 @@ function preload() {
   this.load.json("enemyData", "assets/worldData/dungeon/enemies.json");
 }
 
-function create() {
+function create(this: GameScene) {
   this.anims.create({ key: "idle-S", frames: this.anims.generateFrameNumbers("idle-S", { start: 0, end: 12 }), frameRate: 6, repeat: -1 });
   this.anims.create({ key: "idle-N", frames: this.anims.generateFrameNumbers("idle-N", { start: 0, end: 12 }), frameRate: 6, repeat: -1 });
   this.anims.create({ key: "idle-E", frames: this.anims.generateFrameNumbers("idle-E", { start: 0, end: 12 }), frameRate: 6, repeat: -1 });
@@ -81,13 +81,13 @@ function create() {
   const map = this.make.tilemap({ key: "map" });
   console.log(map.tilesets);
   const tilesets = [
-    map.addTilesetImage("Dungeon_Tiles", "DungeonTiles"),
-    map.addTilesetImage("Dungeon_Tile", "DungeonTile")
+    map.addTilesetImage("Dungeon_Tiles", "DungeonTiles")!,
+    map.addTilesetImage("Dungeon_Tile", "DungeonTile")!
   ];
 
-  const floor = map.createLayer("Boden", tilesets, 0, 0);
-  const floorTop = map.createLayer("BodenTop", tilesets, 0, 0);
-  const walls = map.createLayer("Wände", tilesets, 0, 0);
+  const floor = map.createLayer("Boden", tilesets, 0, 0)!;
+  const floorTop = map.createLayer("BodenTop", tilesets, 0, 0)!;
+  const walls = map.createLayer("Wände", tilesets, 0, 0)!;
 
   walls.setCollisionByExclusion([-1]);
   this.walls = walls;
@@ -141,12 +141,12 @@ function create() {
   this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
   this.cameras.main.setZoom(2);
 
-  this.cursors = this.input.keyboard.addKeys({
+  this.cursors = this.input.keyboard!.addKeys({
     up: Phaser.Input.Keyboard.KeyCodes.W,
     down: Phaser.Input.Keyboard.KeyCodes.S,
     left: Phaser.Input.Keyboard.KeyCodes.A,
     right: Phaser.Input.Keyboard.KeyCodes.D
-  });
+  }) as GameScene["cursors"];
 
   this.cursors.left.on("down", () => { lastHorizontal = "left"; });
   this.cursors.right.on("down", () => { lastHorizontal = "right"; });
@@ -162,14 +162,14 @@ function create() {
     window.initializeDebugSpawner(this);
   }
 
-  this.walkSound = this.sound.add("walk", { loop: true, volume: 0 });
+  this.walkSound = this.sound.add("walk", { loop: true, volume: 0 }) as GameScene["walkSound"];
 
   this.input.once("pointerdown", () => {
     this.walkSound.play();
   });
 
   this.quests = JSON.parse(JSON.stringify(this.cache.json.get("quests")));
-  this.questMarkers = this.add.group();
+  this.questMarkers = this.add.group() as QuestMarkerGroup;
   this.activeQuest = null;
 
   if (savedState && Array.isArray(savedState.completedQuestIds)) {
@@ -183,7 +183,7 @@ function create() {
 
   this.quests.forEach(quest => {
     if (!quest.completed) {
-      const marker = this.add.image(quest.x, quest.y, "quest-sprite");
+      const marker = this.add.image(quest.x, quest.y, "quest-sprite") as QuestMarker;
       marker.setScale(0.1);
       marker.setDepth(3);
       marker.questId = quest.id;
@@ -230,7 +230,7 @@ function create() {
   abilityLabel.setDepth(9003);
   this.abilityUI = { fill: abilityFill, label: abilityLabel, boxX: abilityBoxX, boxY: abilityBoxY, boxWidth: abilityBoxWidth, boxHeight: abilityBoxHeight };
 
-  this.input.keyboard.on("keydown-SPACE", () => {
+  this.input.keyboard!.on("keydown-SPACE", () => {
     if (this.activeQuest) {
       const questIndex = this.quests.findIndex(q => q.id === this.activeQuest);
       if (questIndex !== -1) {
@@ -246,7 +246,7 @@ function create() {
     }
     const now = this.time.now;
     if (now >= this.abilityCooldownEnd) {
-      let closestEnemy = null;
+      let closestEnemy = null as Enemy | null;
       let closestDistance = Number.POSITIVE_INFINITY;
       let closestIndex = -1;
       this.enemies.forEach((enemy, index) => {
@@ -258,8 +258,8 @@ function create() {
         }
       });
       if (closestEnemy) {
-        const targetX = closestEnemy.circle.x;
-        const targetY = closestEnemy.circle.y;
+        const targetX = closestEnemy!.circle.x;
+        const targetY = closestEnemy!.circle.y;
         this.tweens.add({
           targets: this.player,
           x: targetX,
@@ -267,24 +267,24 @@ function create() {
           duration: 50,
           ease: 'Linear',
           onComplete: () => {
-            if (closestEnemy.debugDanger) closestEnemy.debugDanger.destroy();
-            if (closestEnemy.debugChase) closestEnemy.debugChase.destroy();
-            if (closestEnemy.debugAttack) closestEnemy.debugAttack.destroy();
-            if (closestEnemy.circle) closestEnemy.circle.destroy();
+            if (closestEnemy!.debugDanger) closestEnemy!.debugDanger.destroy();
+            if (closestEnemy!.debugChase) closestEnemy!.debugChase.destroy();
+            if (closestEnemy!.debugAttack) closestEnemy!.debugAttack.destroy();
+            if (closestEnemy!.circle) closestEnemy!.circle.destroy();
             this.enemies.splice(closestIndex, 1);
             if (this.player.body) {
               this.player.body.reset(targetX, targetY);
               this.player.body.setVelocity(0, 0);
             }
             if (closestEnemy) {
-              const attackSound = document.getElementById("attackSound");
+              const attackSound = document.getElementById("attackSound") as HTMLAudioElement | null;
               if (attackSound) {
                 attackSound.currentTime = 0;
                 attackSound.play().catch(() => {});
               }
             }
             if (this.enemyData && Array.isArray(this.enemyData.enemies)) {
-              const eIndex = this.enemyData.enemies.findIndex(e => e.id === closestEnemy.id);
+              const eIndex = this.enemyData.enemies.findIndex(e => e.id === closestEnemy!.id);
               if (eIndex !== -1) {
                 this.enemyData.enemies[eIndex].removed = true;
                 if (typeof updateEnemiesFile === 'function') {
@@ -367,7 +367,7 @@ function create() {
   this.coordElement = document.getElementById("coordinateDisplay");
 }
 
-function update() {
+function update(this: GameScene) {
   const speed = 80;
   const now = this.time.now;
 
@@ -469,7 +469,7 @@ function update() {
   updateEnemies(this);
 
   const proximityRange = 50;
-  let nearestMarker = null;
+  let nearestMarker = null as QuestMarker | null;
   let nearestDistance = proximityRange;
 
   this.questMarkers.getChildren().forEach(marker => {
@@ -503,7 +503,7 @@ function update() {
   }
 }
 
-function createEnemyFromConfig(scene, enemyConfig, index) {
+function createEnemyFromConfig(scene: GameScene, enemyConfig: EnemyConfig, index: number) {
   if (!scene || !enemyConfig) {
     return null;
   }
@@ -539,7 +539,7 @@ function createEnemyFromConfig(scene, enemyConfig, index) {
   enemyCircle.body.setAllowGravity(false);
   enemyCircle.setDepth(1.5);
 
-  const enemy = {
+  const enemy: Enemy = {
     id: enemyConfig.id || `enemy-${index + 1}`,
     type,
     circle: enemyCircle,
@@ -569,7 +569,7 @@ function createEnemyFromConfig(scene, enemyConfig, index) {
   return enemy;
 }
 
-function loadEnemies(scene) {
+function loadEnemies(scene: GameScene) {
   if (!scene) {
     return;
   }
@@ -589,7 +589,7 @@ function loadEnemies(scene) {
   }
 }
 
-function saveLocalState(scene) {
+function saveLocalState(scene?: GameScene) {
   if (!scene) {
     return;
   }
@@ -620,7 +620,7 @@ function saveLocalState(scene) {
   }
 }
 
-function loadLocalSaveState() {
+function loadLocalSaveState(): SaveState | null {
   try {
     const raw = localStorage.getItem("vengence-save-state");
     if (!raw) {
@@ -641,7 +641,7 @@ function clearLocalSaveState() {
   }
 }
 
-function resetEnemies(scene) {
+function resetEnemies(scene: GameScene) {
   if (!scene) {
     return;
   }
@@ -675,7 +675,7 @@ function resetEnemies(scene) {
   }
 }
 
-async function updateQuestsFile(quests) {
+async function updateQuestsFile(quests: Quest[]) {
   try {
     const response = await fetch("assets/worldData/quests.json", {
       method: "POST",
@@ -689,7 +689,7 @@ async function updateQuestsFile(quests) {
   }
 }
 
-async function updateEnemiesFile(enemies) {
+async function updateEnemiesFile(enemies: EnemyConfig[]) {
   try {
     const payload = { enemies };
     await fetch("assets/worldData/dungeon/enemies.json", {

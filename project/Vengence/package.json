@@ -1,0 +1,14 @@
+{
+  "name": "vengence",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "phaser": "3.90.0",
+    "typescript": "5.9.3"
+  }
+}
